@@ -1,0 +1,98 @@
+# Build and publish both iPhone apps on a Mac in the cloud.
+#
+# Why this file exists: Apple will only compile and sign an iOS app on macOS.
+# That is Apple's rule, not a limit of the code — the Swift in this repo is
+# complete, and it is the same code a Mac on a desk would compile. Codemagic
+# rents that Mac by the minute (free tier: 500 minutes a month; a build of this
+# size takes about five), so no Mac has to be bought.
+#
+# ONE-TIME SETUP
+#   1. Put this ios-app folder in a Git repository and connect it in Codemagic.
+#   2. Codemagic > Teams > Integrations > Apple Developer Portal: connect with an
+#      App Store Connect API key. That key is what signs the app — Codemagic
+#      never sees your Apple password.
+#   3. In App Store Connect create the two apps with the bundle ids below.
+#   4. Press Start build, choose a workflow, wait.
+#
+# The build lands in TestFlight, which is how an iPhone app is installed before
+# it is public. Sending it to the App Store is then one button in App Store
+# Connect.
+#
+# The two workflows are identical apart from four strings. They are written out
+# in full rather than shared through a YAML anchor because a workflow that
+# half-inherits its scripts is the kind of thing that silently builds the wrong
+# app.
+
+workflows:
+
+  ideric:
+    name: Ideric Bank — iPhone
+    max_build_duration: 45
+    integrations:
+      app_store_connect: CODEMAGIC_API_KEY     # the key connected in step 2
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.idericbank.app
+      vars:
+        BUNDLE_ID: com.idericbank.app
+        SCHEME: IdericBank
+    scripts:
+      - name: Generate the Xcode project
+        script: |
+          # The .xcodeproj is not committed; it is generated from project.yml so
+          # the two can never drift apart.
+          brew install xcodegen
+          xcodegen generate
+      - name: Fetch the signing certificate and profile
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build the app
+        script: |
+          xcode-project build-ipa --project Banks.xcodeproj --scheme "$SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  dessalines:
+    name: Dessalines Bank — iPhone
+    max_build_duration: 45
+    integrations:
+      app_store_connect: CODEMAGIC_API_KEY
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.dessalinesbank.app
+      vars:
+        BUNDLE_ID: com.dessalinesbank.app
+        SCHEME: DessalinesBank
+    scripts:
+      - name: Generate the Xcode project
+        script: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Fetch the signing certificate and profile
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build the app
+        script: |
+          xcode-project build-ipa --project Banks.xcodeproj --scheme "$SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

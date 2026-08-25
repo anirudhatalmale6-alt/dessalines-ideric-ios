@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDisplayName</key>
+    <string>Dessalines Bank</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+    <key>NSCameraUsageDescription</key>
+    <string>Dessalines Bank bezwen kamera a pou verifye idantite ou.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Dessalines Bank bezwen foto ou yo pou ou ka voye pyès idantite ou.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Dessalines Bank needs the microphone only during the video step of an identity check.</string>
+    <!-- No NSAllowsArbitraryLoads. Both banks are HTTPS-only and a bank that
+         quietly permits plain HTTP is a bank that can be read on a cafe Wi-Fi. -->
+</dict>
+</plist>

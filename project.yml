@@ -1,0 +1,62 @@
+# XcodeGen spec — this file IS the Xcode project.
+#
+# The .xcodeproj is generated from here by `xcodegen generate` instead of being
+# committed. An .xcodeproj is a 2,000-line machine-written file that nobody can
+# read or merge; twelve lines of YAML that regenerate it are the same project
+# and can actually be reviewed.
+#
+# Regenerate locally (on any Mac):   brew install xcodegen && xcodegen generate
+# The cloud build in codemagic.yaml runs the same command before it builds.
+
+name: Banks
+options:
+  bundleIdPrefix: com
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"          # iPhone only
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+
+  IdericBank:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/Shared
+      - path: Sources/IdericBank
+        # Info.plist is named by INFOPLIST_FILE below. Letting it in here as
+        # well copies it into the bundle a second time and the build fails on a
+        # duplicate output.
+        excludes: ["Info.plist"]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.idericbank.app
+        PRODUCT_NAME: Ideric Bank
+        INFOPLIST_FILE: Sources/IdericBank/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  DessalinesBank:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/Shared
+      - path: Sources/DessalinesBank
+        excludes: ["Info.plist"]
+    settings:
+      base:
+        # Matches the Android package, which is what Apple and Google both
+        # expect for the same product on two stores.
+        PRODUCT_BUNDLE_IDENTIFIER: com.dessalinesbank.app
+        PRODUCT_NAME: Dessalines Bank
+        INFOPLIST_FILE: Sources/DessalinesBank/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "1.2"
+        CURRENT_PROJECT_VERSION: "3"
