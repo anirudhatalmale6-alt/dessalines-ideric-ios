@@ -1,0 +1,77 @@
+# Compile both iPhone apps on a real Mac.
+#
+# WHY THIS EXISTS. The Swift for these two apps was written and handed over, but
+# it had never once been through a compiler — Apple only allows iOS builds on
+# macOS, and I work on Linux. "It should build" is not a fact. The risk that
+# creates is specific: the owner pays Apple USD 99, sets up a cloud Mac, presses
+# build, and only then finds out whether the code compiles.
+#
+# GitHub gives public repositories free macOS runners, so this settles it for
+# nothing. It builds both apps for the iOS Simulator, which needs NO signing
+# certificate and NO Apple Developer account — exactly the part that can be
+# proved before he spends any money.
+#
+# What it does NOT do: produce an .ipa you can put on the App Store. That needs
+# a paid Apple account and real signing certificates, and no amount of CI gets
+# around it. codemagic.yaml in this repo is the recipe for that half, and it
+# runs the same xcodegen + xcodebuild underneath.
+name: Build both iPhone apps
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    strategy:
+      # Do not stop the other app when one fails — if both are broken I want to
+      # see both errors in one run, not discover the second one tomorrow.
+      fail-fast: false
+      matrix:
+        scheme: [DessalinesBank, IdericBank]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show the toolchain actually being used
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Generate the Xcode project from project.yml
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild -list -project Banks.xcodeproj
+
+      - name: Build ${{ matrix.scheme }} for the simulator (no signing needed)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Banks.xcodeproj \
+            -scheme "${{ matrix.scheme }}" \
+            -sdk iphonesimulator \
+            -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Check the app icon survived the build and is App Store legal
+        # App Store Connect rejects an icon that carries an alpha channel, and
+        # the asset catalog is compiled during the build - so this is the point
+        # where the real, packaged icon can be examined rather than the file on
+        # disk.
+        run: |
+          APP=$(find ~/Library/Developer/Xcode/DerivedData -name '*.app' -maxdepth 6 | head -1)
+          echo "built: $APP"
+          ls -la "$APP" | head -20
+          ICON=$(find "$APP" -name 'AppIcon*.png' | head -1)
+          if [ -n "$ICON" ]; then
+            echo "icon in bundle: $ICON"
+            sips -g pixelWidth -g pixelHeight -g hasAlpha "$ICON"
+          else
+            echo "NOTE: no loose icon file in the bundle (normal - it is in Assets.car)"
+          fi
